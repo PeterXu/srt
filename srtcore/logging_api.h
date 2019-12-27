@@ -68,7 +68,7 @@ public:
     }
 };
 
-const LogFA LOGFA_GENERAL = 0;
+//const LogFA LOGFA_GENERAL = 0;
 
 
 

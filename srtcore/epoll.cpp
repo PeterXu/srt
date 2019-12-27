@@ -528,7 +528,7 @@ int CEPoll::wait(const int eid, set<SRTSOCKET>* readfds, set<SRTSOCKET>* writefd
                 IF_HEAVY_LOGGING(const int prev_total = total);
                 for (int i = 0; i < nfds; ++ i)
                 {
-                    if ((NULL != lrfds) && (ev[i].events & EPOLLIN))
+                    if ((NULL != lrfds) && (ev[i].events & (EPOLLIN|EPOLLPRI)))
                     {
                         lrfds->insert(ev[i].data.fd);
                         ++ total;
@@ -538,6 +538,7 @@ int CEPoll::wait(const int eid, set<SRTSOCKET>* readfds, set<SRTSOCKET>* writefd
                         lwfds->insert(ev[i].data.fd);
                         ++ total;
                     }
+                    //check error: (EPOLLRDHUP | EPOLLERR | EPOLLHUP)
                 }
                 HLOGC(mglog.Debug, log << "CEPoll::wait: LINUX: picking up " << (total - prev_total)  << " ready fds.");
 
