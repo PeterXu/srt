@@ -1342,13 +1342,13 @@ int CUDTUnited::epoll_create()
 }
 
 int CUDTUnited::epoll_add_usock(
-   const int eid, const SRTSOCKET u, const int* events)
+   const int eid, const SRTSOCKET u, const int* events, const void* ptr)
 {
    CUDTSocket* s = locate(u);
    int ret = -1;
    if (s)
    {
-      ret = m_EPoll.add_usock(eid, u, events);
+      ret = m_EPoll.add_usock(eid, u, events, ptr);
       s->m_pUDT->addEPoll(eid);
    }
    else
@@ -1366,13 +1366,13 @@ int CUDTUnited::epoll_add_ssock(
 }
 
 int CUDTUnited::epoll_update_usock(
-   const int eid, const SRTSOCKET u, const int* events)
+   const int eid, const SRTSOCKET u, const int* events, const void* ptr)
 {
    CUDTSocket* s = locate(u);
    int ret = -1;
    if (s)
    {
-      ret = m_EPoll.update_usock(eid, u, events);
+      ret = m_EPoll.update_usock(eid, u, events, ptr);
       s->m_pUDT->addEPoll(eid);
    }
    else
@@ -2518,11 +2518,11 @@ int CUDT::epoll_create()
    }
 }
 
-int CUDT::epoll_add_usock(const int eid, const SRTSOCKET u, const int* events)
+int CUDT::epoll_add_usock(const int eid, const SRTSOCKET u, const int* events, const void* ptr)
 {
    try
    {
-      return s_UDTUnited.epoll_add_usock(eid, u, events);
+      return s_UDTUnited.epoll_add_usock(eid, u, events, ptr);
    }
    catch (const CUDTException& e)
    {
@@ -2559,11 +2559,11 @@ int CUDT::epoll_add_ssock(const int eid, const SYSSOCKET s, const int* events, c
 }
 
 int CUDT::epoll_update_usock(
-   const int eid, const SRTSOCKET u, const int* events)
+   const int eid, const SRTSOCKET u, const int* events, const void* ptr)
 {
    try
    {
-      return s_UDTUnited.epoll_update_usock(eid, u, events);
+      return s_UDTUnited.epoll_update_usock(eid, u, events, ptr);
    }
    catch (const CUDTException& e)
    {
@@ -2997,9 +2997,9 @@ int epoll_create()
    return CUDT::epoll_create();
 }
 
-int epoll_add_usock(int eid, SRTSOCKET u, const int* events)
+int epoll_add_usock(int eid, SRTSOCKET u, const int* events, const void* ptr)
 {
-   return CUDT::epoll_add_usock(eid, u, events);
+   return CUDT::epoll_add_usock(eid, u, events, ptr);
 }
 
 int epoll_add_ssock(int eid, SYSSOCKET s, const int* events, const void* ptr)
@@ -3007,9 +3007,9 @@ int epoll_add_ssock(int eid, SYSSOCKET s, const int* events, const void* ptr)
    return CUDT::epoll_add_ssock(eid, s, events, ptr);
 }
 
-int epoll_update_usock(int eid, SRTSOCKET u, const int* events)
+int epoll_update_usock(int eid, SRTSOCKET u, const int* events, const void* ptr)
 {
-   return CUDT::epoll_update_usock(eid, u, events);
+   return CUDT::epoll_update_usock(eid, u, events, ptr);
 }
 
 int epoll_update_ssock(int eid, SYSSOCKET s, const int* events, const void* ptr)

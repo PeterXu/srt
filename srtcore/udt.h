@@ -366,12 +366,12 @@ UDT_API int selectEx(const std::vector<UDTSOCKET>& fds, std::vector<UDTSOCKET>* 
                      std::vector<UDTSOCKET>* writefds, std::vector<UDTSOCKET>* exceptfds, int64_t msTimeOut);
 
 UDT_API int epoll_create();
-UDT_API int epoll_add_usock(int eid, UDTSOCKET u, const int* events = NULL);
-UDT_API int epoll_add_ssock(int eid, SYSSOCKET s, const int* events = NULL);
+UDT_API int epoll_add_usock(int eid, UDTSOCKET u, const int* events, const void* ptr);
+UDT_API int epoll_add_ssock(int eid, SYSSOCKET s, const int* events, const void* ptr);
 UDT_API int epoll_remove_usock(int eid, UDTSOCKET u);
 UDT_API int epoll_remove_ssock(int eid, SYSSOCKET s);
-UDT_API int epoll_update_usock(int eid, UDTSOCKET u, const int* events = NULL);
-UDT_API int epoll_update_ssock(int eid, SYSSOCKET s, const int* events = NULL);
+UDT_API int epoll_update_usock(int eid, UDTSOCKET u, const int* events, const void* ptr);
+UDT_API int epoll_update_ssock(int eid, SYSSOCKET s, const int* events, const void* ptr);
 UDT_API int epoll_wait(int eid, std::set<UDTSOCKET>* readfds, std::set<UDTSOCKET>* writefds, int64_t msTimeOut,
                        std::set<SYSSOCKET>* lrfds = NULL, std::set<SYSSOCKET>* wrfds = NULL,
                        std::vector<SRTEVENT>* uevents = NULL, std::vector<SRTEVENT>* sevents = NULL);

@@ -107,11 +107,15 @@ struct CEPollDesc
        /// `nullNotice()` if there is no such object.
        enotice_t::iterator notit;
 
-       Wait(int sub, bool etr, enotice_t::iterator i)
+       /// The pointer of user data
+       void *ptr;
+
+       Wait(int sub, bool etr, enotice_t::iterator i, void *p)
            :watch(sub)
            ,edge(etr ? sub : 0)
            ,state(0)
            ,notit(i)
+           ,ptr(p)
        {
        }
 
@@ -170,9 +174,9 @@ public:
    const int m_iLocalID;                           // local system epoll ID
    std::set<SYSSOCKET> m_sLocals;            // set of local (non-UDT) descriptors
 
-   std::pair<ewatch_t::iterator, bool> addWatch(SRTSOCKET sock, int32_t events, bool edgeTrg)
+   std::pair<ewatch_t::iterator, bool> addWatch(SRTSOCKET sock, int32_t events, bool edgeTrg, void *ptr)
    {
-        return m_USockWatchState.insert(std::make_pair(sock, Wait(events, edgeTrg, nullNotice())));
+        return m_USockWatchState.insert(std::make_pair(sock, Wait(events, edgeTrg, nullNotice(), ptr)));
    }
 
    void addEventNotice(Wait& wait, SRTSOCKET sock, int events)
@@ -306,7 +310,7 @@ public: // for CUDTUnited API
       /// @param [in] events events to watch.
       /// @return 0 if success, otherwise an error number.
 
-   int add_usock(const int eid, const SRTSOCKET& u, const int* events = NULL) { return update_usock(eid, u, events); }
+   int add_usock(const int eid, const SRTSOCKET& u, const int* events, const void* ptr) { return update_usock(eid, u, events, ptr); }
 
       /// add a system socket to an EPoll.
       /// @param [in] eid EPoll ID.
@@ -321,7 +325,7 @@ public: // for CUDTUnited API
       /// @param [in] u UDT socket ID.
       /// @return 0 if success, otherwise an error number.
 
-   int remove_usock(const int eid, const SRTSOCKET& u) { static const int Null(0); return update_usock(eid, u, &Null);}
+   int remove_usock(const int eid, const SRTSOCKET& u) { static const int Null(0); return update_usock(eid, u, &Null, NULL);}
 
       /// remove a system socket event from an EPoll; socket will be removed if no events to watch.
       /// @param [in] eid EPoll ID.
@@ -335,7 +339,7 @@ public: // for CUDTUnited API
       /// @param [in] events events to watch.
       /// @return 0 if success, otherwise an error number.
 
-   int update_usock(const int eid, const SRTSOCKET& u, const int* events);
+   int update_usock(const int eid, const SRTSOCKET& u, const int* events, const void *ptr);
 
       /// update a system socket events from an EPoll.
       /// @param [in] eid EPoll ID.

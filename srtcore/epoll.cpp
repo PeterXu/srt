@@ -238,7 +238,7 @@ int CEPoll::remove_ssock(const int eid, const SYSSOCKET& s)
 }
 
 // Need this to atomically modify polled events (ex: remove write/keep read)
-int CEPoll::update_usock(const int eid, const SRTSOCKET& u, const int* events)
+int CEPoll::update_usock(const int eid, const SRTSOCKET& u, const int* events, const void* ptr)
 {
     CGuard pg(m_EPollLock);
 
@@ -253,7 +253,7 @@ int CEPoll::update_usock(const int eid, const SRTSOCKET& u, const int* events)
     evts &= ~SRT_EPOLL_ET;
     if (evts)
     {
-        pair<CEPollDesc::ewatch_t::iterator, bool> iter_new = d.addWatch(u, evts, edgeTriggered);
+        pair<CEPollDesc::ewatch_t::iterator, bool> iter_new = d.addWatch(u, evts, edgeTriggered, (void *)ptr);
         CEPollDesc::Wait& wait = iter_new.first->second;
         if (!iter_new.second)
         {
