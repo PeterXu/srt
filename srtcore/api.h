@@ -189,12 +189,12 @@ public:
    int selectEx(const std::vector<SRTSOCKET>& fds, std::vector<SRTSOCKET>* readfds, std::vector<SRTSOCKET>* writefds, std::vector<SRTSOCKET>* exceptfds, int64_t msTimeOut);
    int epoll_create();
    int epoll_add_usock(const int eid, const SRTSOCKET u, const int* events = NULL);
-   int epoll_add_ssock(const int eid, const SYSSOCKET s, const int* events = NULL);
+   int epoll_add_ssock(const int eid, const SYSSOCKET s, const int* events, const void* ptr);
    int epoll_remove_usock(const int eid, const SRTSOCKET u);
    int epoll_remove_ssock(const int eid, const SYSSOCKET s);
    int epoll_update_usock(const int eid, const SRTSOCKET u, const int* events = NULL);
-   int epoll_update_ssock(const int eid, const SYSSOCKET s, const int* events = NULL);
-   int epoll_wait(const int eid, std::set<SRTSOCKET>* readfds, std::set<SRTSOCKET>* writefds, int64_t msTimeOut, std::set<SYSSOCKET>* lrfds = NULL, std::set<SYSSOCKET>* lwfds = NULL);
+   int epoll_update_ssock(const int eid, const SYSSOCKET s, const int* events, const void* ptr);
+   int epoll_wait(const int eid, std::set<SRTSOCKET>* readfds, std::set<SRTSOCKET>* writefds, int64_t msTimeOut, std::set<SYSSOCKET>* lrfds = NULL, std::set<SYSSOCKET>* lwfds = NULL, std::vector<SRTEVENT> *uevents = NULL, std::vector<SRTEVENT>* sevents = NULL);
    int epoll_uwait(const int eid, SRT_EPOLL_EVENT* fdsSet, int fdsSize, int64_t msTimeOut);
    int32_t epoll_set(const int eid, int32_t flags);
    int epoll_release(const int eid);

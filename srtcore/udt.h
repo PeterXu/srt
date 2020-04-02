@@ -373,9 +373,11 @@ UDT_API int epoll_remove_ssock(int eid, SYSSOCKET s);
 UDT_API int epoll_update_usock(int eid, UDTSOCKET u, const int* events = NULL);
 UDT_API int epoll_update_ssock(int eid, SYSSOCKET s, const int* events = NULL);
 UDT_API int epoll_wait(int eid, std::set<UDTSOCKET>* readfds, std::set<UDTSOCKET>* writefds, int64_t msTimeOut,
-                       std::set<SYSSOCKET>* lrfds = NULL, std::set<SYSSOCKET>* wrfds = NULL);
+                       std::set<SYSSOCKET>* lrfds = NULL, std::set<SYSSOCKET>* wrfds = NULL,
+                       std::vector<SRTEVENT>* uevents = NULL, std::vector<SRTEVENT>* sevents = NULL);
 UDT_API int epoll_wait2(int eid, UDTSOCKET* readfds, int* rnum, UDTSOCKET* writefds, int* wnum, int64_t msTimeOut,
-                        SYSSOCKET* lrfds = NULL, int* lrnum = NULL, SYSSOCKET* lwfds = NULL, int* lwnum = NULL);
+                        SYSSOCKET* lrfds = NULL, int* lrnum = NULL, SYSSOCKET* lwfds = NULL, int* lwnum = NULL,
+                        SRTEVENT* uevents = NULL, int* unum = NULL, SRTEVENT* sevents = NULL, int *snum = NULL);
 UDT_API int epoll_uwait(const int eid, SRT_EPOLL_EVENT* fdsSet, int fdsSize, int64_t msTimeOut);
 UDT_API int epoll_release(int eid);
 UDT_API ERRORINFO& getlasterror();

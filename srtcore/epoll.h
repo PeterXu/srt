@@ -56,6 +56,7 @@ modified by
 
 #include <map>
 #include <set>
+#include <vector>
 #include <list>
 #include "udt.h"
 
@@ -313,7 +314,7 @@ public: // for CUDTUnited API
       /// @param [in] events events to watch.
       /// @return 0 if success, otherwise an error number.
 
-   int add_ssock(const int eid, const SYSSOCKET& s, const int* events = NULL);
+   int add_ssock(const int eid, const SYSSOCKET& s, const int* events, const void* ptr);
 
       /// remove a UDT socket event from an EPoll; socket will be removed if no events to watch.
       /// @param [in] eid EPoll ID.
@@ -342,7 +343,7 @@ public: // for CUDTUnited API
       /// @param [in] events events to watch.
       /// @return 0 if success, otherwise an error number.
 
-   int update_ssock(const int eid, const SYSSOCKET& s, const int* events = NULL);
+   int update_ssock(const int eid, const SYSSOCKET& s, const int* events, const void* ptr);
 
       /// wait for EPoll events or timeout.
       /// @param [in] eid EPoll ID.
@@ -353,7 +354,7 @@ public: // for CUDTUnited API
       /// @param [out] lwfds system file descriptors for writing.
       /// @return number of sockets available for IO.
 
-   int wait(const int eid, std::set<SRTSOCKET>* readfds, std::set<SRTSOCKET>* writefds, int64_t msTimeOut, std::set<SYSSOCKET>* lrfds, std::set<SYSSOCKET>* lwfds);
+   int wait(const int eid, std::set<SRTSOCKET>* readfds, std::set<SRTSOCKET>* writefds, int64_t msTimeOut, std::set<SYSSOCKET>* lrfds, std::set<SYSSOCKET>* lwfds, std::vector<SRTEVENT> *uevents, std::vector<SRTEVENT> *sevents);
 
       /// wait for EPoll events or timeout optimized with explicit EPOLL_ERR event and the edge mode option.
       /// @param [in] eid EPoll ID.

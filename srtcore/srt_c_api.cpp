@@ -202,7 +202,7 @@ int srt_epoll_create() { return CUDT::epoll_create(); }
 // events == NULL accepted, in which case all flags are set.
 int srt_epoll_add_usock(int eid, SRTSOCKET u, const int * events) { return CUDT::epoll_add_usock(eid, u, events); }
 
-int srt_epoll_add_ssock(int eid, SYSSOCKET s, const int * events)
+int srt_epoll_add_ssock(int eid, SYSSOCKET s, const int * events, const void* ptr)
 {
     int flag = 0;
 
@@ -213,7 +213,7 @@ int srt_epoll_add_ssock(int eid, SYSSOCKET s, const int * events)
     }
 
     // call UDT native function
-    return CUDT::epoll_add_ssock(eid, s, &flag);
+    return CUDT::epoll_add_ssock(eid, s, &flag, ptr);
 }
 
 int srt_epoll_remove_usock(int eid, SRTSOCKET u) { return CUDT::epoll_remove_usock(eid, u); }
@@ -224,7 +224,7 @@ int srt_epoll_update_usock(int eid, SRTSOCKET u, const int * events)
     return CUDT::epoll_update_usock(eid, u, events);
 }
 
-int srt_epoll_update_ssock(int eid, SYSSOCKET s, const int * events)
+int srt_epoll_update_ssock(int eid, SYSSOCKET s, const int * events, const void* ptr)
 {
     int flag = 0;
 
@@ -235,7 +235,7 @@ int srt_epoll_update_ssock(int eid, SYSSOCKET s, const int * events)
     }
 
     // call UDT native function
-    return CUDT::epoll_update_ssock(eid, s, &flag);
+    return CUDT::epoll_update_ssock(eid, s, &flag, ptr);
 }
 
 int srt_epoll_wait(
@@ -248,7 +248,18 @@ int srt_epoll_wait(
         eid,
         readfds, rnum, writefds, wnum,
         msTimeOut,
-        lrfds, lrnum, lwfds, lwnum);
+        lrfds, lrnum, lwfds, lwnum,
+        NULL, NULL, NULL, NULL);
+}
+
+SRT_API int srt_epoll_wait_ex(int eid, SRTEVENT* uevents, int* unum, SRTEVENT* sevents, int* snum, int64_t msTimeOut)
+{
+    return UDT::epoll_wait2(
+        eid,
+        NULL, NULL, NULL, NULL,
+        msTimeOut,
+        NULL, NULL, NULL, NULL,
+        uevents, unum, sevents, snum);
 }
 
 int srt_epoll_uwait(int eid, SRT_EPOLL_EVENT* fdsSet, int fdsSize, int64_t msTimeOut)

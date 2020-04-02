@@ -114,6 +114,15 @@ typedef int SRTSOCKET; // SRTSOCKET is a typedef to int anyway, and it's not eve
 typedef SYSSOCKET UDPSOCKET;
 
 
+typedef struct SRTEVENT {
+  uint32_t events;
+  union {
+    void *ptr;
+    SRTSOCKET ufd;
+    SYSSOCKET sfd;
+  } data;
+}SRTEVENT;
+
 // Values returned by srt_getsockstate()
 typedef enum SRT_SOCKSTATUS {
    SRTS_INIT = 1,
@@ -703,14 +712,15 @@ SRT_API SRT_SOCKSTATUS srt_getsockstate(SRTSOCKET u);
 
 SRT_API int srt_epoll_create(void);
 SRT_API int srt_epoll_add_usock(int eid, SRTSOCKET u, const int* events);
-SRT_API int srt_epoll_add_ssock(int eid, SYSSOCKET s, const int* events);
+SRT_API int srt_epoll_add_ssock(int eid, SYSSOCKET s, const int* events, const void* ptr=NULL);
 SRT_API int srt_epoll_remove_usock(int eid, SRTSOCKET u);
 SRT_API int srt_epoll_remove_ssock(int eid, SYSSOCKET s);
 SRT_API int srt_epoll_update_usock(int eid, SRTSOCKET u, const int* events);
-SRT_API int srt_epoll_update_ssock(int eid, SYSSOCKET s, const int* events);
+SRT_API int srt_epoll_update_ssock(int eid, SYSSOCKET s, const int* events, const void* ptr=NULL);
 
 SRT_API int srt_epoll_wait(int eid, SRTSOCKET* readfds, int* rnum, SRTSOCKET* writefds, int* wnum, int64_t msTimeOut,
                            SYSSOCKET* lrfds, int* lrnum, SYSSOCKET* lwfds, int* lwnum);
+SRT_API int srt_epoll_wait_ex(int eid, SRTEVENT* uevents, int* unum, SRTEVENT* sevents, int* snum, int64_t msTimeOut);
 typedef struct SRT_EPOLL_EVENT_
 {
     SRTSOCKET fd;

@@ -138,7 +138,7 @@ ENOMEM: There was insufficient memory to create the kernel object.
    return m_iIDSeed;
 }
 
-int CEPoll::add_ssock(const int eid, const SYSSOCKET& s, const int* events)
+int CEPoll::add_ssock(const int eid, const SYSSOCKET& s, const int* events, const void* ptr)
 {
    CGuard pg(m_EPollLock);
 
@@ -164,6 +164,7 @@ int CEPoll::add_ssock(const int eid, const SYSSOCKET& s, const int* events)
    }
 
    ev.data.fd = s;
+   if (ptr) ev.data.ptr = (void *)ptr;
    if (::epoll_ctl(p->second.m_iLocalID, EPOLL_CTL_ADD, s, &ev) < 0)
       throw CUDTException();
 #elif defined(BSD) || defined(OSX) || (TARGET_OS_IOS == 1) || (TARGET_OS_TV == 1)
@@ -298,7 +299,7 @@ int CEPoll::update_usock(const int eid, const SRTSOCKET& u, const int* events)
     return 0;
 }
 
-int CEPoll::update_ssock(const int eid, const SYSSOCKET& s, const int* events)
+int CEPoll::update_ssock(const int eid, const SYSSOCKET& s, const int* events, const void* ptr)
 {
    CGuard pg(m_EPollLock);
 
@@ -324,6 +325,7 @@ int CEPoll::update_ssock(const int eid, const SYSSOCKET& s, const int* events)
    }
 
    ev.data.fd = s;
+   if (ptr) ev.data.ptr = (void *)ptr;
    if (::epoll_ctl(p->second.m_iLocalID, EPOLL_CTL_MOD, s, &ev) < 0)
       throw CUDTException();
 #elif defined(BSD) || defined(OSX) || (TARGET_OS_IOS == 1) || (TARGET_OS_TV == 1)
@@ -453,10 +455,10 @@ int CEPoll::uwait(const int eid, SRT_EPOLL_EVENT* fdsSet, int fdsSize, int64_t m
     return 0;
 }
 
-int CEPoll::wait(const int eid, set<SRTSOCKET>* readfds, set<SRTSOCKET>* writefds, int64_t msTimeOut, set<SYSSOCKET>* lrfds, set<SYSSOCKET>* lwfds)
+int CEPoll::wait(const int eid, set<SRTSOCKET>* readfds, set<SRTSOCKET>* writefds, int64_t msTimeOut, set<SYSSOCKET>* lrfds, set<SYSSOCKET>* lwfds, vector<SRTEVENT> *uevents, vector<SRTEVENT> *sevents)
 {
     // if all fields is NULL and waiting time is infinite, then this would be a deadlock
-    if (!readfds && !writefds && !lrfds && !lwfds && (msTimeOut < 0))
+    if (!readfds && !writefds && !lrfds && !lwfds && (msTimeOut < 0) && !uevents && !sevents)
         throw CUDTException(MJ_NOTSUP, MN_INVAL, 0);
 
     // Clear these sets in case the app forget to do it.
@@ -464,6 +466,8 @@ int CEPoll::wait(const int eid, set<SRTSOCKET>* readfds, set<SRTSOCKET>* writefd
     if (writefds) writefds->clear();
     if (lrfds) lrfds->clear();
     if (lwfds) lwfds->clear();
+    if (uevents) uevents->clear();
+    if (sevents) sevents->clear();
 
     int total = 0;
 
@@ -519,6 +523,21 @@ int CEPoll::wait(const int eid, set<SRTSOCKET>* readfds, set<SRTSOCKET>* writefd
                         ++total;
                 }
 
+                if (uevents && (it->events & (UDT_EPOLL_IN|UDT_EPOLL_OUT|UDT_EPOLL_ERR))) {
+                    SRTEVENT evout;
+                    evout.data.ufd = it->fd;
+                    if (it->events & UDT_EPOLL_IN) {
+                        evout.events |= SRT_EPOLL_IN; 
+                    }
+                    if (it->events & UDT_EPOLL_OUT) {
+                        evout.events |= SRT_EPOLL_OUT; 
+                    }
+                    if (it->events & UDT_EPOLL_ERR) {
+                        evout.events |= SRT_EPOLL_ERR; 
+                    }
+                    uevents->push_back(evout);
+                }
+
                 IF_HEAVY_LOGGING(debug_sockets << " " << it->fd << ":"
                         << IF_DIRNAME(it->events, SRT_EPOLL_IN, "R")
                         << IF_DIRNAME(it->events, SRT_EPOLL_OUT, "W")
@@ -553,6 +572,22 @@ int CEPoll::wait(const int eid, set<SRTSOCKET>* readfds, set<SRTSOCKET>* writefd
                         lwfds->insert(ev[i].data.fd);
                         ++ total;
                     }
+
+                    if (sevents && (ev[i].events & (EPOLLIN|EPOLLOUT|EPOLLERR))) {
+                        SRTEVENT evout;
+                        if (ev[i].data.ptr) evout.data.ptr = ev[i].data.ptr;
+                        else evout.data.sfd = ev[i].data.fd;
+                        if (ev[i].events & EPOLLIN) {
+                            evout.events |= SRT_EPOLL_IN;
+                        }
+                        if (ev[i].events & EPOLLOUT) {
+                            evout.events |= SRT_EPOLL_OUT;
+                        }
+                        if (ev[i].events & EPOLLERR) {
+                            evout.events |= SRT_EPOLL_ERR;
+                        }
+                        sevents->push_back(evout);
+                    }
                 }
                 HLOGC(mglog.Debug, log << "CEPoll::wait: LINUX: picking up " << (total - prev_total)  << " ready fds.");
 
@@ -575,6 +610,18 @@ int CEPoll::wait(const int eid, set<SRTSOCKET>* readfds, set<SRTSOCKET>* writefd
                     {
                         lwfds->insert(ke[i].ident);
                         ++ total;
+                    }
+
+                    if (sevents && (ke[i].filter == EVFILT_READ || ke[i].filter == EVFILT_WRITE)) {
+                        SRTEVENT evout;
+                        evout.data.sfd = ke[i].ident;
+                        if (ke[i].filter == EVFILT_READ) {
+                            evout.events |= SRT_EPOLL_IN;
+                        }
+                        if (ke[i].filter == EVFILT_WRITE) {
+                            evout.events |= SRT_EPOLL_OUT;
+                        }
+                        sevents->push_back(evout);
                     }
                 }
 
@@ -619,6 +666,17 @@ int CEPoll::wait(const int eid, set<SRTSOCKET>* readfds, set<SRTSOCKET>* writefd
                         {
                             lwfds->insert(*i);
                             ++ total;
+                        }
+                        if (sevents && (FD_ISSET(*i, &rqreadfds) || FD_ISSET(*i, &rqwritefds))) {
+                            SRTEVENT evout;
+                            evout.data.sfd = *i;
+                            if (FD_ISSET(*i, &rqreadfds)) {
+                                evout.events |= SRT_EPOLL_IN;
+                            }
+                            if (FD_ISSET(*i, &rqwritefds)) {
+                                evout.events |= SRT_EPOLL_OUT;
+                            }
+                            sevents->push_back(evout);
                         }
                     }
                 }

@@ -1360,9 +1360,9 @@ int CUDTUnited::epoll_add_usock(
 }
 
 int CUDTUnited::epoll_add_ssock(
-   const int eid, const SYSSOCKET s, const int* events)
+   const int eid, const SYSSOCKET s, const int* events, const void* ptr)
 {
-   return m_EPoll.add_ssock(eid, s, events);
+   return m_EPoll.add_ssock(eid, s, events, ptr);
 }
 
 int CUDTUnited::epoll_update_usock(
@@ -1384,9 +1384,9 @@ int CUDTUnited::epoll_update_usock(
 }
 
 int CUDTUnited::epoll_update_ssock(
-   const int eid, const SYSSOCKET s, const int* events)
+   const int eid, const SYSSOCKET s, const int* events, const void* ptr)
 {
-   return m_EPoll.update_ssock(eid, s, events);
+   return m_EPoll.update_ssock(eid, s, events, ptr);
 }
 
 int CUDTUnited::epoll_remove_usock(const int eid, const SRTSOCKET u)
@@ -1417,9 +1417,11 @@ int CUDTUnited::epoll_wait(
    set<SRTSOCKET>* writefds,
    int64_t msTimeOut,
    set<SYSSOCKET>* lrfds,
-   set<SYSSOCKET>* lwfds)
+   set<SYSSOCKET>* lwfds,
+   vector<SRTEVENT> *uevents,
+   vector<SRTEVENT> *sevents)
 {
-   return m_EPoll.wait(eid, readfds, writefds, msTimeOut, lrfds, lwfds);
+   return m_EPoll.wait(eid, readfds, writefds, msTimeOut, lrfds, lwfds, uevents, sevents);
 }
 
 int CUDTUnited::epoll_uwait(
@@ -2536,11 +2538,11 @@ int CUDT::epoll_add_usock(const int eid, const SRTSOCKET u, const int* events)
    }
 }
 
-int CUDT::epoll_add_ssock(const int eid, const SYSSOCKET s, const int* events)
+int CUDT::epoll_add_ssock(const int eid, const SYSSOCKET s, const int* events, const void* ptr)
 {
    try
    {
-      return s_UDTUnited.epoll_add_ssock(eid, s, events);
+      return s_UDTUnited.epoll_add_ssock(eid, s, events, ptr);
    }
    catch (const CUDTException& e)
    {
@@ -2578,11 +2580,11 @@ int CUDT::epoll_update_usock(
 }
 
 int CUDT::epoll_update_ssock(
-   const int eid, const SYSSOCKET s, const int* events)
+   const int eid, const SYSSOCKET s, const int* events, const void* ptr)
 {
    try
    {
-      return s_UDTUnited.epoll_update_ssock(eid, s, events);
+      return s_UDTUnited.epoll_update_ssock(eid, s, events, ptr);
    }
    catch (const CUDTException& e)
    {
@@ -2645,12 +2647,14 @@ int CUDT::epoll_wait(
    set<SRTSOCKET>* writefds,
    int64_t msTimeOut,
    set<SYSSOCKET>* lrfds,
-   set<SYSSOCKET>* lwfds)
+   set<SYSSOCKET>* lwfds,
+   vector<SRTEVENT>* uevents,
+   vector<SRTEVENT>* sevents)
 {
    try
    {
       return s_UDTUnited.epoll_wait(
-         eid, readfds, writefds, msTimeOut, lrfds, lwfds);
+         eid, readfds, writefds, msTimeOut, lrfds, lwfds, uevents, sevents);
    }
    catch (const CUDTException& e)
    {
@@ -2998,9 +3002,9 @@ int epoll_add_usock(int eid, SRTSOCKET u, const int* events)
    return CUDT::epoll_add_usock(eid, u, events);
 }
 
-int epoll_add_ssock(int eid, SYSSOCKET s, const int* events)
+int epoll_add_ssock(int eid, SYSSOCKET s, const int* events, const void* ptr)
 {
-   return CUDT::epoll_add_ssock(eid, s, events);
+   return CUDT::epoll_add_ssock(eid, s, events, ptr);
 }
 
 int epoll_update_usock(int eid, SRTSOCKET u, const int* events)
@@ -3008,9 +3012,9 @@ int epoll_update_usock(int eid, SRTSOCKET u, const int* events)
    return CUDT::epoll_update_usock(eid, u, events);
 }
 
-int epoll_update_ssock(int eid, SYSSOCKET s, const int* events)
+int epoll_update_ssock(int eid, SYSSOCKET s, const int* events, const void* ptr)
 {
-   return CUDT::epoll_update_ssock(eid, s, events);
+   return CUDT::epoll_update_ssock(eid, s, events, ptr);
 }
 
 int epoll_remove_usock(int eid, SRTSOCKET u)
@@ -3031,7 +3035,7 @@ int epoll_wait(
    set<SYSSOCKET>* lrfds,
    set<SYSSOCKET>* lwfds)
 {
-   return CUDT::epoll_wait(eid, readfds, writefds, msTimeOut, lrfds, lwfds);
+   return CUDT::epoll_wait(eid, readfds, writefds, msTimeOut, lrfds, lwfds, NULL, NULL);
 }
 
 /*
@@ -3078,6 +3082,24 @@ inline void set_result(set<SOCKTYPE>* val, int* num, SOCKTYPE* fds)
     }
 }
 
+inline void set_vector(vector<SRTEVENT>* val, int* num, SRTEVENT* evs)
+{
+    if ( !val || !num || !evs )
+        return;
+
+    if (*num > int(val->size()))
+        *num = int(val->size()); // will get 0 if val->empty()
+    int count = 0;
+
+    // This loop will run 0 times if val->empty()
+    for (vector<SRTEVENT>::const_iterator it = val->begin(); it != val->end(); ++ it)
+    {
+        if (count >= *num)
+            break;
+        evs[count ++] = *it;
+    }
+}
+
 int epoll_wait2(
    int eid, SRTSOCKET* readfds,
    int* rnum, SRTSOCKET* writefds,
@@ -3086,7 +3108,11 @@ int epoll_wait2(
    SYSSOCKET* lrfds,
    int* lrnum,
    SYSSOCKET* lwfds,
-   int* lwnum)
+   int* lwnum,
+   SRTEVENT* uevents,
+   int* unum,
+   SRTEVENT* sevents,
+   int* snum)
 {
    // This API is an alternative format for epoll_wait, created for
    // compatability with other languages. Users need to pass in an array
@@ -3098,10 +3124,14 @@ int epoll_wait2(
    set<SRTSOCKET> writeset;
    set<SYSSOCKET> lrset;
    set<SYSSOCKET> lwset;
+   vector<SRTEVENT> uvec;
+   vector<SRTEVENT> svec;
    set<SRTSOCKET>* rval = NULL;
    set<SRTSOCKET>* wval = NULL;
    set<SYSSOCKET>* lrval = NULL;
    set<SYSSOCKET>* lwval = NULL;
+   vector<SRTEVENT>* uval = NULL;
+   vector<SRTEVENT>* sval = NULL;
    if ((readfds != NULL) && (rnum != NULL))
       rval = &readset;
    if ((writefds != NULL) && (wnum != NULL))
@@ -3110,8 +3140,12 @@ int epoll_wait2(
       lrval = &lrset;
    if ((lwfds != NULL) && (lwnum != NULL))
       lwval = &lwset;
+   if ((uevents != NULL) && (unum != NULL))
+      uval = &uvec;
+   if ((sevents != NULL) && (snum != NULL))
+      sval = &svec;
 
-   int ret = CUDT::epoll_wait(eid, rval, wval, msTimeOut, lrval, lwval);
+   int ret = CUDT::epoll_wait(eid, rval, wval, msTimeOut, lrval, lwval, uval, sval);
    if (ret > 0)
    {
       //set<SRTSOCKET>::const_iterator i;
@@ -3125,6 +3159,9 @@ int epoll_wait2(
       set_result(lrval, lrnum, lrfds);
       //SET_RESULT(lwval, lwnum, lwfds, j);
       set_result(lwval, lwnum, lwfds);
+
+      set_vector(uval, unum, uevents);
+      set_vector(sval, snum, sevents);
    }
    return ret;
 }
