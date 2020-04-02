@@ -525,7 +525,8 @@ int CEPoll::wait(const int eid, set<SRTSOCKET>* readfds, set<SRTSOCKET>* writefd
 
                 if (uevents && (it->events & (UDT_EPOLL_IN|UDT_EPOLL_OUT|UDT_EPOLL_ERR))) {
                     SRTEVENT evout;
-                    evout.data.ufd = it->fd;
+                    if (it->ptr) evout.data.ptr = it->ptr;
+                    else evout.data.ufd = it->fd;
                     if (it->events & UDT_EPOLL_IN) {
                         evout.events |= SRT_EPOLL_IN; 
                     }

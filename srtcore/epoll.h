@@ -70,8 +70,9 @@ struct CEPollDesc
    struct Notice: public SRT_EPOLL_EVENT
    {
        Wait* parent;
+       void* ptr;
 
-       Notice(Wait* p, SRTSOCKET sock, int ev): parent(p)
+       Notice(Wait* p, SRTSOCKET sock, int ev, void* ptr): parent(p), ptr(ptr)
        {
            fd = sock;
            events = ev;
@@ -190,7 +191,7 @@ public:
        if (wait.notit == nullNotice()) // No notice object
        {
            // Add new event notice and bind to the wait object.
-           m_USockEventNotice.push_back(Notice(&wait, sock, events));
+           m_USockEventNotice.push_back(Notice(&wait, sock, events, wait.ptr));
            wait.notit = --m_USockEventNotice.end();
 
            return;
